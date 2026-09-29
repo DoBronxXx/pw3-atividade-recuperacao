@@ -724,6 +724,338 @@ git push origin alu1-alu2-av
 
 ---
 
+# 🟣 ETAPA 4 — Aprovação de Exercício
+
+## Endpoint
+
+```http
+PATCH /exercicios-fisicos/{id}/aprovar
+```
+
+Nesta etapa será implementada a funcionalidade responsável por **aprovar um exercício físico previamente cadastrado**.
+
+A aprovação altera o atributo aprovado para true.
+
+Depois de aprovado, o exercício poderá aparecer nos endpoints públicos de consulta:
+
+```http
+GET /exercicios-fisicos
+```
+
+e:
+
+```http
+GET /exercicios-fisicos/{id}
+```
+
+### Fluxo
+
+```text
+Postman
+   │
+   │ PATCH /exercicios-fisicos/{id}/aprovar
+   ▼
+┌─────────────────────────────┐
+│ ExercicioFisicoController   │
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│ ExercicioFisicoService      │
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│ ExercicioFisicoRepository   │
+└──────────────┬──────────────┘
+               │
+               ▼
+        ┌───────────────┐
+        │    Banco H2   │
+        └───────────────┘
+```
+
+## 4.1 Regra de Aprovação
+
+O exercício deverá ser aprovado somente quando o ID informado existir.
+
+Ao executar:
+
+```http
+PATCH /exercicios-fisicos/{id}/aprovar
+```
+
+a aplicação deverá:
+
+1. Receber o ID do exercício.
+2. Buscar o exercício pelo ID.
+3. Verificar se o exercício existe.
+4. Alterar `aprovado` para `true`.
+5. Salvar a alteração no banco.
+6. Retornar o exercício aprovado.
+
+Caso o exercício não exista, deverá ser retornado:
+
+```text
+404 Not Found
+```
+
+### Regra importante
+
+Um exercício já aprovado poderá continuar aprovado.
+
+> [!IMPORTANT]
+> O atributo `aprovado` não deverá ser recebido pelo cliente no corpo da requisição.
+>
+> A aprovação deve ser controlada pela aplicação por meio do endpoint específico.
+
+## 4.2 Repository
+
+Na interface `Repository`, não é obrigatório criar um novo método de busca
+
+```java
+Optional<ExercicioFisico> findById(Long id);
+```
+
+Utilize esse método para localizar o exercício que será aprovado.
+
+Não é necessário criar um DTO específico para aprovação.
+
+## 4.4 Service
+
+Na classe `Service`, implemente o método aprovar
+A lógica deverá seguir:
+
+```text
+Receber ID
+    ↓
+Buscar exercício pelo ID
+    ↓
+Exercício existe?
+   / \
+ NÃO  SIM
+ ↓     ↓
+404   aprovado = true
+       ↓
+   repository.save()
+       ↓
+     Mapper
+       ↓
+  ResponseDTO
+```
+
+> [!NOTE]
+> A exceção e o tratamento de erros podem ser adaptados à estrutura do projeto.
+>
+> Caso o projeto utilize uma exceção própria, como `RecursoNaoEncontradoException`, utilize a exceção definida no projeto-base.
+
+## 4.5 Controller
+
+Na classe `Controller`, adicione a chamada ao método aprovar usando a anotação
+
+```java
+@PatchMapping("/{id}/aprovar")
+```
+
+### Status HTTP
+
+| Situação | Status |
+|---|---:|
+| Exercício encontrado e aprovado | `200 OK` |
+| Exercício inexistente | `404 Not Found` |
+
+---
+
+# 🧪 Testes da Etapa 4
+
+## Cenário 1 — Aprovar exercício não aprovado
+
+Primeiro, cadastre um novo exercício:
+
+```http
+POST http://localhost:8080/exercicios-fisicos
+```
+
+O exercício será criado com:
+
+```text
+aprovado = false
+```
+
+Supondo que o banco tenha gerado:
+
+```text
+id = 3
+```
+
+execute:
+
+```http
+PATCH http://localhost:8080/exercicios-fisicos/3/aprovar
+```
+
+### Status esperado
+
+```text
+200 OK
+```
+
+### Exemplo de resposta
+
+```json
+{
+    "id": 3,
+    "nome": "Rosca Direta",
+    "grupoMuscular": "Bíceps",
+    "imagem": "rosca-direta.jpg",
+    "descricao": "Exercício para desenvolvimento da musculatura do bíceps.",
+    "series": 3,
+    "repeticoes": 12,
+    "cargaSugerida": 10.0,
+    "nivelDificuldade": "INICIANTE"
+}
+```
+
+O atributo `aprovado` não aparece na resposta porque ele não faz parte do `DTO`.
+
+## Cenário 2 — Verificar a aprovação na listagem
+
+Após executar:
+
+```http
+PATCH /exercicios-fisicos/3/aprovar
+```
+
+execute:
+
+```http
+GET http://localhost:8080/exercicios-fisicos
+```
+
+O exercício aprovado deverá aparecer na lista.
+
+## Cenário 3 — Consultar o exercício aprovado por ID
+
+Execute:
+
+```http
+GET http://localhost:8080/exercicios-fisicos/3
+```
+
+### Status esperado
+
+```text
+200 OK
+```
+
+O exercício deverá ser retornado porque agora:
+
+```text
+aprovado = true
+```
+
+## Cenário 4 — Aprovar exercício inexistente
+
+Execute:
+
+```http
+PATCH http://localhost:8080/exercicios-fisicos/999/aprovar
+```
+
+### Status esperado
+
+```text
+404 Not Found
+```
+
+---
+
+# 🔎 Verificação Completa da Regra de Aprovação
+
+A sequência abaixo deverá demonstrar o funcionamento completo da regra.
+
+### 1. Cadastrar
+
+```http
+POST /exercicios-fisicos
+```
+
+Resultado:
+
+```text
+aprovado = false
+```
+
+### 2. Consultar lista
+
+```http
+GET /exercicios-fisicos
+```
+
+Resultado:
+
+```text
+O exercício NÃO aparece.
+```
+
+### 3. Consultar por ID
+
+```http
+GET /exercicios-fisicos/{id}
+```
+
+Resultado:
+
+```text
+404 Not Found
+```
+
+### 4. Aprovar
+
+```http
+PATCH /exercicios-fisicos/{id}/aprovar
+```
+
+Resultado:
+
+```text
+200 OK
+aprovado = true
+```
+
+### 5. Consultar lista novamente
+
+```http
+GET /exercicios-fisicos
+```
+
+Resultado:
+
+```text
+O exercício passa a aparecer.
+```
+
+### 6. Consultar por ID novamente
+
+```http
+GET /exercicios-fisicos/{id}
+```
+
+Resultado:
+
+```text
+200 OK
+```
+
+## 📌 Commit da Etapa 4
+
+```bash
+git add .
+git commit -m "feat: etapa 4 - aprovacao de exercicio fisico (PATCH /exercicios-fisicos/{id}/aprovar)"
+git push origin alu1-alu2-av
+```
+
+
 # 📦 Entrega da Atividade
 
 Antes da entrega, verifique o estado do projeto:
@@ -747,7 +1079,7 @@ git branch
 Certifique-se de que todos os commits foram enviados:
 
 ```bash
-git push origin alu1-av
+git push origin seuNome
 ```
 
 Compartilhe com o professor o repositório ou abra um **Pull Request**, conforme orientação da disciplina.
@@ -762,6 +1094,8 @@ Compartilhe com o professor o repositório ou abra um **Pull Request**, conforme
 | **Etapa 1: Listagem** | Repository, Mapper, Service e Controller retornando somente exercícios aprovados com status `200 OK`. | **R** |
 | **Etapa 2: Consulta por ID** | Repository, Mapper, Service e Controller tratando `Optional` e diferenciando exercício aprovado encontrado (`200 OK`) de exercício inexistente ou não aprovado (`404 Not Found`). | **B** |
 | **Etapa 3: Cadastro** | Criação do Request DTO, métodos no Mapper e Service, Controller com `@RequestBody`, persistência e retorno `201 Created`, criando o exercício inicialmente como não aprovado. | **MB** |
+| **Etapa 4: Aprovação do exercício físico** | Será analisado e testado nas etapas 1, 2 e 3. | ** ** |
+
 
 ---
 
@@ -774,6 +1108,7 @@ Ao concluir as três etapas, a API deverá possuir os seguintes endpoints:
 | `GET` | `/exercicios-fisicos` | Lista exercícios aprovados |
 | `GET` | `/exercicios-fisicos/{id}` | Consulta exercício aprovado por ID |
 | `POST` | `/exercicios-fisicos` | Cadastra novo exercício |
+| `PATCH` | `/exercicios-fisicos/{id}/aprovar` | Aprova um exercício |
 
 O fluxo completo deverá seguir:
 
@@ -807,3 +1142,5 @@ O fluxo completo deverá seguir:
 ```
 
 A implementação deverá respeitar a **separação de responsabilidades entre as camadas** e o **desenvolvimento incremental proposto em cada etapa**.
+
+---
