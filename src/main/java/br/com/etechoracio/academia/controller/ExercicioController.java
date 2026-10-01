@@ -36,4 +36,11 @@ public class ExercicioController {
         ExercicioDTO response = service.cadastrar(req);
         return ResponseEntity.status(201).body(response);
     }
+
+    @PatchMapping("/{id}/aprovar")
+    public ResponseEntity<ExercicioDTO> aprovar(
+            @PathVariable Long id
+    ){
+        return service.aprovar(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }
