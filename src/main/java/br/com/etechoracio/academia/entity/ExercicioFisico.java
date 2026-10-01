@@ -43,4 +43,8 @@ public class ExercicioFisico {
     @Column(name = "CK_APROVADO")
     private boolean aprovado;
 
+    public void setAprovado(boolean aprovado){
+        this.aprovado = aprovado;
+    }
+
 }

@@ -1,6 +1,7 @@
 package br.com.etechoracio.academia.mapper;
 
 import br.com.etechoracio.academia.dto.ExercicioDTO;
+import br.com.etechoracio.academia.dto.ExercicioRequest;
 import br.com.etechoracio.academia.entity.ExercicioFisico;
 import org.mapstruct.Mapper;
 
@@ -8,5 +9,5 @@ import org.mapstruct.Mapper;
 public interface ExercicioMapper {
 
     ExercicioDTO toResponse(ExercicioFisico exercicio);
-
+    ExercicioFisico toEntity(ExercicioRequest request);
 }

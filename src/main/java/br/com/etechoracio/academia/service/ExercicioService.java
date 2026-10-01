@@ -1,6 +1,8 @@
 package br.com.etechoracio.academia.service;
 
 import br.com.etechoracio.academia.dto.ExercicioDTO;
+import br.com.etechoracio.academia.dto.ExercicioRequest;
+import br.com.etechoracio.academia.entity.ExercicioFisico;
 import br.com.etechoracio.academia.mapper.ExercicioMapper;
 import br.com.etechoracio.academia.repository.ExercicioRepository;
 import org.springframework.stereotype.Service;
@@ -32,5 +34,13 @@ public class ExercicioService {
 
     public Optional<ExercicioDTO> buscarPorId(Long id){
         return repository.findByIdAndAprovadoTRUE(id).map(mapper::toResponse);
+    }
+
+    public ExercicioDTO cadastrar(ExercicioRequest request){
+        ExercicioFisico exer = mapper.toEntity(request);
+        exer.setAprovado(false);
+        ExercicioFisico salvo = repository.save(exer);
+
+        return mapper.toResponse(salvo);
     }
 }
