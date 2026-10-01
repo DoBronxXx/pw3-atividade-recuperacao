@@ -6,6 +6,7 @@ import br.com.etechoracio.academia.repository.ExercicioRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ExercicioService {
@@ -27,5 +28,9 @@ public class ExercicioService {
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
+    }
+
+    public Optional<ExercicioDTO> buscarPorId(Long id){
+        return repository.findByIdAndAprovadoTRUE(id).map(mapper::toResponse);
     }
 }
